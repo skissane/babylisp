@@ -1,0 +1,16 @@
+#!/bin/bash
+_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+abortMsg() {
+	echo 1>&2 "ERROR: $*"
+	exit 1
+}
+
+_exec="${_dir}/build/install/babylispjava/bin/babylispjava"
+_gradlew="${_dir}/gradlew"
+
+"${_gradlew}" installDist 1>&2 >/dev/null || {
+	abortMsg "build failed"
+}
+
+"${_exec}" "$@"
