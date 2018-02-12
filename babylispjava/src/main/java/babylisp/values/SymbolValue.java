@@ -4,6 +4,7 @@ import javax.annotation.Nonnull;
 import java.util.regex.Pattern;
 
 public final class SymbolValue extends SimpleValue {
+
     private final String name;
 
     public static final Pattern VALID_SYMBOL =
@@ -34,4 +35,7 @@ public final class SymbolValue extends SimpleValue {
     protected int doCompare(@Nonnull Value b) {
         return name.compareTo(((SymbolValue) b).name);
     }
+
+    public static final Value TRUE = new SymbolValue("true");
+    public static final Value FALSE = new SymbolValue("false");
 }

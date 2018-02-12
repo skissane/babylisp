@@ -61,4 +61,38 @@ public abstract class Value implements Comparable<Value> {
     }
 
     protected abstract int doCompare(@Nonnull Value b);
+
+    protected abstract Value doCopy();
+
+    @SuppressWarnings("unchecked")
+    public static <T extends Value> T copy(@Nullable T v) {
+        return v == null ? null : (T) v.doCopy();
+    }
+
+    public static <T extends Value> T mutable(@Nullable T v) {
+        if (v == null || v.immutable() || !(v instanceof ComplexValue))
+            return v;
+        final ComplexValue cv = (ComplexValue) v;
+        if (cv.parent() == null)
+            return v;
+        return copy(v);
+    }
+
+    public abstract boolean immutable();
+
+    protected void doImmute() {
+    }
+
+    public static <T extends Value> T immute(@Nullable T value) {
+        if (value instanceof ComplexValue) {
+            final T copy = mutable(value);
+            copy.doImmute();
+            return copy;
+        }
+        return value;
+    }
+
+    public static String toString(@Nullable Value v) {
+        return v == null ? "*" : v.toString();
+    }
 }

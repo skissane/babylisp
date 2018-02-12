@@ -1,6 +1,7 @@
 package babylisp.values;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -8,7 +9,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class ListValue extends ComplexValue {
-    private final List<SimpleOrComplex> values = new ArrayList<>();
+    private final List<Value> values = new ArrayList<>();
 
     public ListValue() {
         super(ValueType.VT_list);
@@ -27,8 +28,8 @@ public class ListValue extends ComplexValue {
     @Override
     protected int doCompare(@Nonnull Value b) {
         final ListValue va = this, vb = (ListValue) b;
-        final Iterator<SimpleOrComplex> ia = va.values.iterator();
-        final Iterator<SimpleOrComplex> ib = vb.values.iterator();
+        final Iterator<Value> ia = va.values.iterator();
+        final Iterator<Value> ib = vb.values.iterator();
         while (true) {
             final boolean ha = ia.hasNext();
             final boolean hb = ib.hasNext();
@@ -38,11 +39,32 @@ public class ListValue extends ComplexValue {
                 return -1;
             if (!hb)
                 return 1;
-            final SimpleOrComplex ea = ia.next();
-            final SimpleOrComplex eb = ib.next();
-            final int r = Value.compare((Value) ea, (Value) eb);
+            final Value ea = ia.next();
+            final Value eb = ib.next();
+            final int r = Value.compare(ea, eb);
             if (r != 0)
                 return r;
         }
+    }
+
+    public void add(@Nullable Value v) {
+        ensureMutable();
+        values.add(this.adopt(v));
+    }
+
+    @Override
+    protected ListValue doCopy() {
+        final ListValue copy = new ListValue();
+        values.forEach(copy::add);
+        return copy;
+    }
+
+    @Override
+    public int size() {
+        return values.size();
+    }
+
+    public Value get(int index) {
+        return values.get(index);
     }
 }

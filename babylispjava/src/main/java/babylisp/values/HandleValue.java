@@ -3,7 +3,7 @@ package babylisp.values;
 import javax.annotation.Nonnull;
 import java.util.Objects;
 
-public final class HandleValue extends Value implements SimpleOrHandle {
+public final class HandleValue extends Value {
     public HandleValue(@Nonnull ComplexValue to) {
         super(ValueType.VT_handle);
         this.to = Objects.requireNonNull(to);
@@ -29,5 +29,15 @@ public final class HandleValue extends Value implements SimpleOrHandle {
     @Override
     protected int doCompare(@Nonnull Value b) {
         return to.compareTo(((HandleValue) b).to);
+    }
+
+    @Override
+    public boolean immutable() {
+        return to.immutable();
+    }
+
+    @Override
+    public Value doCopy() {
+        return new HandleValue(Value.copy(to));
     }
 }

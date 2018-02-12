@@ -1,0 +1,21 @@
+ACT 1 - JAVA PROTOTYPE WITH TREE-BASED EVALUATION
+
+1] Use tree-based evaluator in Java
+2] Get (as close to feasible) 100% code coverage
+	- Write tests in BabyLisp not Java
+
+ACT 2 - JAVA PROTOTYPE WITH BYTECODE VM
+
+3] Introduce a bytecode VM and compiler
+4] Replace tree-based evaluator with bytecode compiler/VM
+
+ACT 3 - BEGINNINGS OF C IMPLEMENTATION
+
+5] Create SystemLisp->C compiler
+	- SystemLisp: Lisp-like syntax, C-like semantics
+6] Begin writing new implementation in SystemLisp
+
+ACT 4 - FINISH C IMPLEMENTATION
+
+7] 100% test coverage for SystemLisp implementation
+8] Remove the old Java implementation

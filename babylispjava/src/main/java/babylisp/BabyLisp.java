@@ -1,8 +1,20 @@
 package babylisp;
 
+import babylisp.values.Value;
+
+import javax.annotation.Nonnull;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import static babylisp.Utils.handle;
+import static java.lang.System.out;
 
 public class BabyLisp {
     private enum OptionType {
@@ -42,6 +54,9 @@ public class BabyLisp {
     }
 
     public static void main(String[] args) {
+        runFile("__init__.baby");
+        out.println("BUILTIN NAMES = " + Builtins.enumerate());
+
         final List<Option> opts = new ArrayList<>();
         if (args.length == 0)
             opts.add(new Option(OptionType.REPL, null));
@@ -60,15 +75,45 @@ public class BabyLisp {
         opts.forEach(Option::run);
     }
 
-    private static void evalCode(String arg) {
-
+    private static void evalCode(@Nonnull String text) {
+        final Value code = LispReader.read(text);
+        final Value result = LispEvaluator.eval(code);
+        out.println(result);
     }
 
-    private static void runFile(String fileName) {
+    private static void runFile(@Nonnull String fileName) {
+        evalCode(slurpFile(Paths.get(fileName)));
+    }
 
+    private static String slurpFile(@Nonnull Path path) {
+        try (BufferedReader rdr = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            return slurp(rdr);
+        } catch (IOException e) {
+            throw handle(e);
+        }
+    }
+
+    private static String slurp(@Nonnull BufferedReader rdr) {
+        try {
+            final StringBuilder b = new StringBuilder();
+            final char[] buf = new char[4096];
+            while (true) {
+                final int r = rdr.read(buf);
+                if (r < 0)
+                    return b.toString();
+                b.append(buf, 0, r);
+            }
+        } catch (IOException e) {
+            throw handle(e);
+        }
     }
 
     private static void showHelp() {
-
+        out.println("Usage:");
+        out.println("-help\t\tshow this help");
+        out.println("-eval CODE\tevaluate provided code");
+        out.println("FILENAME\tevaluate provided file");
+        out.println("-repl\t\tlaunch REPL");
+        out.println("If no arguments, -repl is default");
     }
 }

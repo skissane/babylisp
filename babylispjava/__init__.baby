@@ -1,0 +1,36 @@
+#[class top ()]
+#[class dbObject (top)]
+
+#[attr top/ofClass =desc "Class of this object"]
+#[attr top/desc =desc "Description of this object"]
+#[attr dbObject/name =desc "Name of catalogued object"]
+#[attr class/extends =desc "Superclasses which this class extends"]
+
+#[class callable (top) =desc "Named or anonymous function"]
+#[attr callable/args =desc "Arguments of this callable"]
+#[class func (callable dbObject) =desc "Catalogued function"]
+#[attr func/builtin =desc "Marks function as builtin"]
+#[attr callable/body =desc "Callable body"]
+#[class arg (top) =desc "Defines an argument of a callable"]
+#[attr arg/name =desc "Name of argument"]
+
+#[func putLine (& $v) +builtin]
+#[func set ($var $to) +builtin +special]
+#[func if ($cond $then ? $else) +builtin +special]
+#[func loop ($var & $body) +builtin +special]
+#[func break ($loop ? $value) +builtin]
+#[func continue ($loop) +builtin]
+#[func add ($a $b & $c) +builtin]
+#[func sub ($a $b & $c) +builtin]
+#[func mul ($a $b & $c) +builtin]
+#[func div ($a $b) +builtin]
+
+#[func factorial ($n)
+	=desc "Calculates the factorial"
+	(set $f 1)
+	(set $i 2)
+	(loop $loop
+		(if (gt $i $n) (break $loop))
+		(set $f (mul $f $i)))
+	$f
+]
