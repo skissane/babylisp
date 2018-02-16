@@ -1,5 +1,7 @@
 package babylisp.token;
 
+import babylisp.Utils;
+
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,11 +12,11 @@ public class TokenText {
     private final List<Integer> lines;
 
     TokenText(@Nonnull String text) {
-        this.text = stripLastNewLine(
+        this.text = stripLastNewLine(Utils.expandTabs(
                 text
                         .replace("\r\n", "\n")
-                        .replace("\r", "\n")
-        );
+                        .replace("\r", "\n"),
+                8));
         final List<Integer> lines = new ArrayList<>();
         int pos = 0;
         while (pos >= 0) {
@@ -75,5 +77,18 @@ public class TokenText {
         }
         b.append("]");
         return b.toString();
+    }
+
+    RuntimeException syntaxError(@Nonnull String why, int pos) {
+        final int line = getLineForOffset(pos);
+        final int col = getColumnForOffset(pos);
+        assert line >= 1 : "line >=1 : line=" + line;
+        assert col >= 1 : "col >= 1 : col=" + col + " in " + this;
+        String lineText = getTextForLine(line);
+        String msg = "(" + line + "," + col + ") syntax error: " + why + "\n" +
+                line + ":" + lineText + "\n" +
+                String.join("", Collections.nCopies(Integer.toString(line).length(), " ")) +
+                ":" + String.join("", Collections.nCopies(col - 1, " ")) + "^";
+        return new RuntimeException(msg);
     }
 }

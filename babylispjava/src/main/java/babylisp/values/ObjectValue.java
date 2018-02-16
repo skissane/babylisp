@@ -11,6 +11,10 @@ public final class ObjectValue extends ComplexValue {
 
     private final SortedMap<SymbolValue, Value> values = new TreeMap<>();
 
+    public ObjectValue(@Nonnull String ofClass) {
+        this(new SymbolValue(ofClass));
+    }
+
     public ObjectValue(@Nonnull SymbolValue ofClass) {
         super(ValueType.VT_object);
         values.put(CLASS_SYM, ofClass);
@@ -66,6 +70,10 @@ public final class ObjectValue extends ComplexValue {
             if (rl != 0)
                 return rl;
         }
+    }
+
+    public Value set(@Nonnull String attr, @Nullable Value value) {
+        return set(new SymbolValue(attr), value);
     }
 
     public Value set(@Nonnull SymbolValue attr, @Nullable Value value) {

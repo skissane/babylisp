@@ -28,7 +28,7 @@ public class LispReader {
         rdr.reader.expectEOF();
     }
 
-    private Value read() {
+    public ObjectValue read() {
         final TokenEvent e = reader.peek(0);
         if (e != null)
             switch (e.tokenType()) {
@@ -39,25 +39,69 @@ public class LispReader {
                 case TT_dqStrBegin:
                     return readString();
                 case TT_symbol:
-                    return readSymbol();
+                    return readSymbolAST();
                 case TT_integer:
-                    return readInteger();
+                    return readIntegerAST();
                 case TT_objectBegin:
                     return readObject();
                 case TT_pragmaBegin:
                     return readPragma();
+                case TT_parenBegin:
+                    return readInvoc();
+                case TT_var:
+                    return readVar();
             }
         throw reader.syntaxError("illegal syntax, got " + reader.got());
     }
 
-    private Value readPragma() {
+    private ObjectValue readVar() {
+        return varNode(new SymbolValue(reader.expect(TT_var).tokenValue()));
+    }
+
+    private ObjectValue readInvoc() {
+        reader.expect(TT_parenBegin);
+        final ObjectValue o = new ObjectValue("ast/invoke");
+        o.set("ast/invoke/what", read());
+        final ListValue args = new ListValue();
+        o.set("ast/invoke/args", args);
+        while (reader.swallow(TT_parenEnd) != null) {
+            if (reader.match(TT_plusKeyword) != null) {
+                final TokenEvent plusKeyword = reader.swallow(TT_plusKeyword);
+                args.add(invocNamedArg(new SymbolValue("$" + plusKeyword.tokenValue()), constTrue()));
+            } else if (reader.match(TT_keyword) != null) {
+                final TokenEvent keyword = reader.swallow(TT_keyword);
+                args.add(invocNamedArg(new SymbolValue("$" + keyword.tokenValue()), read()));
+            } else
+                args.add(invocPosArg(read()));
+        }
+        return o;
+    }
+
+    private ObjectValue invocNamedArg(@Nonnull SymbolValue argName, @Nonnull ObjectValue value) {
+        final ObjectValue o = new ObjectValue("ast/invokeArg");
+        o.set("ast/invokeArg/name", argName);
+        o.set("ast/invokeArg/value", value);
+        return o;
+    }
+
+    private ObjectValue invocPosArg(@Nonnull ObjectValue value) {
+        final ObjectValue o = new ObjectValue("ast/invokeArg");
+        o.set("ast/invokeArg/value", value);
+        return o;
+    }
+
+    private ObjectValue constTrue() {
+        return constValue("symbol", SymbolValue.TRUE);
+    }
+
+    private ObjectValue readPragma() {
         reader.expect(TT_pragmaBegin);
         final TokenEvent eName = reader.expect(TT_symbol);
         final SymbolValue name = new SymbolValue(eName.tokenValue());
         final PragmaReader pragmaReader = PragmaReader.readers().get(name);
         if (pragmaReader == null)
             throw reader.syntaxError("unrecognised pragma #[" + name + "]");
-        final Value pragma = pragmaReader.readPragma(reader);
+        final ObjectValue pragma = pragmaReader.readPragma(this);
         reader.expect(TT_bracketEnd);
         return pragma;
     }
@@ -79,16 +123,35 @@ public class LispReader {
         return o;
     }
 
-    private SymbolValue readSymbol() {
+    public SymbolValue readSymbol() {
         return new SymbolValue(reader.expect(TT_symbol).tokenValue());
+    }
+
+    private ObjectValue readSymbolAST() {
+        return constValue("symbol", readSymbol());
+    }
+
+    private ObjectValue readIntegerAST() {
+        return constValue("integer", readInteger());
     }
 
     private Value readInteger() {
         return new IntegerValue(Long.parseLong(reader.expect(TT_integer).tokenValue()));
     }
 
+    private static ObjectValue constValue(@Nonnull String type, @Nonnull Value value) {
+        final ObjectValue r = new ObjectValue("ast/" + type + "Const");
+        r.set("ast/" + type + "Const/value", value);
+        return r;
+    }
 
-    private StringValue readString() {
+    private static ObjectValue varNode(@Nonnull SymbolValue varName) {
+        final ObjectValue r = new ObjectValue("ast/var");
+        r.set("ast/var/name", varName);
+        return r;
+    }
+
+    private ObjectValue readString() {
         final StringBuilder b = new StringBuilder();
         reader.expect(TT_dqStrBegin);
         while (reader.swallow(TT_dqStrEnd) == null) {
@@ -106,22 +169,26 @@ public class LispReader {
                     throw reader.syntaxError("unexpected " + e.tokenType());
             }
         }
-        return new StringValue(b.toString());
+        return constValue("string", new StringValue(b.toString()));
     }
 
-    private ListValue readList() {
-        final ListValue r = new ListValue();
+    private ObjectValue readList() {
+        final ObjectValue r = new ObjectValue("ast/list");
+        final ListValue entries = new ListValue();
+        r.set("ast/list/entries", entries);
         reader.expect(TT_listBegin);
         while (true) {
             reader.expectNotEOF();
             if (reader.swallow(TT_braceEnd) != null)
                 return r;
-            r.add(read());
+            entries.add(read());
         }
     }
 
-    private DictValue readDict() {
-        final DictValue r = new DictValue();
+    private ObjectValue readDict() {
+        final ObjectValue r = new ObjectValue("ast/dict");
+        final ListValue entries = new ListValue();
+        r.set("ast/dict/entries", entries);
         reader.expect(TT_dictBegin);
         while (true) {
             reader.expectNotEOF();
@@ -129,7 +196,14 @@ public class LispReader {
                 return r;
             final Value key = read();
             final Value value = read();
-            r.set((SimpleValue) key, value);
+            final ObjectValue e = new ObjectValue("ast/dictEntry");
+            e.set(new SymbolValue("ast/dictEntry/key"), key);
+            e.set(new SymbolValue("ast/dictEntry/value"), value);
+            entries.add(e);
         }
+    }
+
+    public TokenReader tokens() {
+        return reader;
     }
 }

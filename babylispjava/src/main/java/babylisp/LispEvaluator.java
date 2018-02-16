@@ -17,7 +17,17 @@ public class LispEvaluator {
             return value;
         if (value instanceof ListValue)
             return evalList((ListValue) value);
+        if (value instanceof ObjectValue)
+            return evalASTNode((ObjectValue) value);
         throw new UnsupportedOperationException("TODO: " + Value.type(value));
+    }
+
+    private static Value evalASTNode(@Nonnull ObjectValue node) {
+        final String nodeClass = node.ofClass().value();
+        switch (nodeClass) {
+            default:
+                return node;
+        }
     }
 
     private static Value evalList(@Nonnull ListValue value) {

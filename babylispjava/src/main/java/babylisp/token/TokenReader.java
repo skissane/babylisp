@@ -3,7 +3,6 @@ package babylisp.token;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -122,17 +121,9 @@ public class TokenReader {
     }
 
     public RuntimeException syntaxError(@Nonnull String why) {
-        final int pos = lookahead.isEmpty() ? this.pos : lookahead.get(0).end();
-        final int line = text.getLineForOffset(pos);
-        final int col = text.getColumnForOffset(pos);
-        assert line >= 1 : "line >=1 : line=" + line;
-        assert col >= 1 : "col >= 1 : col=" + col + " in " + text;
-        String lineText = text.getTextForLine(line);
-        String msg = "(" + line + "," + col + ") syntax error: " + why + "\n" +
-                line + ":" + lineText + "\n" +
-                String.join("", Collections.nCopies(Integer.toString(line).length(), " ")) +
-                ":" + String.join("", Collections.nCopies(col - 1, " ")) + "^";
-        return new RuntimeException(msg);
+        if (!lookahead.isEmpty())
+            return lookahead.get(0).syntaxError(why);
+        return text.syntaxError(why, pos);
     }
 
     public boolean matchEOF() {

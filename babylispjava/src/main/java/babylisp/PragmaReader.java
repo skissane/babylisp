@@ -1,8 +1,7 @@
 package babylisp;
 
-import babylisp.token.TokenReader;
+import babylisp.values.ObjectValue;
 import babylisp.values.SymbolValue;
-import babylisp.values.Value;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSortedMap;
@@ -21,7 +20,7 @@ public abstract class PragmaReader {
 
     public abstract SymbolValue name();
 
-    public abstract Value readPragma(@Nonnull TokenReader reader);
+    public abstract ObjectValue readPragma(@Nonnull LispReader reader);
 
     public static ImmutableSortedMap<SymbolValue, PragmaReader> readers() {
         return READERS_LOADER.get();

@@ -47,4 +47,8 @@ public class TokenEvent {
     public String tokenValue() {
         return tokenValue;
     }
+
+    public RuntimeException syntaxError(@Nonnull String why) {
+        return text.syntaxError(why, start);
+    }
 }
