@@ -19,7 +19,7 @@ public class Repl {
                 if (line.trim().isEmpty())
                     continue;
                 final Value result = LispEvaluator.readThenEvalCode(line);
-                System.out.println(result);
+                System.out.println(Value.toString(result));
             }
         } catch (IOException e) {
             throw Utils.handle(e);

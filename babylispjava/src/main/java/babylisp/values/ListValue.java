@@ -67,4 +67,8 @@ public class ListValue extends ComplexValue {
     public Value get(int index) {
         return values.get(index);
     }
+
+    public <T extends  Value> T get(int index, @Nonnull Class<T> cls) {
+        return cls.cast(get(index));
+    }
 }

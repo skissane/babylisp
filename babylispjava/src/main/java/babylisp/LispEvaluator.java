@@ -25,30 +25,46 @@ public class LispEvaluator {
     private static Value evalASTNode(@Nonnull ObjectValue node) {
         final String nodeClass = node.ofClass().value();
         switch (nodeClass) {
+            case "ast/invoke":
+                return evalASTInvoke(node);
+            case "ast/symbolConst":
+                return node.getSymbol(new SymbolValue("ast/symbolConst/value"));
+            case "ast/stringConst":
+                return node.get(new SymbolValue("ast/stringConst/value"), StringValue.class);
             default:
                 return node;
         }
     }
 
-    private static Value evalList(@Nonnull ListValue value) {
-        if (value.size() == 0)
-            return value;
-        Value toCall = value.get(0);
-        if (toCall instanceof SymbolValue) {
-            final Value symVal = Database.getInstance().get((SymbolValue) toCall);
+    private static Value evalToCall(@Nonnull Value v) {
+        if (v instanceof SymbolValue) {
+            final Value symVal = Database.getInstance().get((SymbolValue) v);
             if (symVal == null)
-                throw new IllegalArgumentException("Not found: " + toCall);
-            toCall = symVal;
+                throw new IllegalArgumentException("Not found: " + v);
+            return symVal;
         }
-        if (toCall instanceof ObjectValue) {
-            final ObjectValue o = (ObjectValue) toCall;
-            if (o.ofClass().equals(SYM_FUNC))
-                return evalFunc(o, value);
-        }
-        throw new UnsupportedOperationException("Cannot call: " + toCall);
+        return v;
     }
 
-    private static Value evalFunc(@Nonnull ObjectValue func, @Nonnull ListValue argv) {
+    private static Value evalASTInvoke(@Nonnull ObjectValue node) {
+        final Value what = evalToCall(eval(node.get(new SymbolValue("ast/invoke/what"))));
+        if (what instanceof ObjectValue && (SYM_FUNC.equals(((ObjectValue) what).ofClass()))) {
+            return evalFunc((ObjectValue) what, node);
+        }
+        throw new UnsupportedOperationException("Cannot call: " + what);
+    }
+
+    private static Value evalList(@Nonnull ListValue value) {
+        final ListValue r = new ListValue();
+        for (int i = 0; i < value.size(); i++)
+            r.add(eval(value.get(i)));
+        return r;
+    }
+
+    private static Value evalFunc(@Nonnull ObjectValue func, @Nonnull ObjectValue invoke) {
+        final ListValue argList = invoke.get(new SymbolValue("ast/invoke/args"), ListValue.class);
+
+
         final boolean special = func.getBoolean(FUNC_SPECIAL);
         final boolean builtin = func.getBoolean(FUNC_BUILTIN);
         if (builtin) {
@@ -56,9 +72,16 @@ public class LispEvaluator {
             if (name == null)
                 throw new IllegalArgumentException("Builtin must have name: " + func);
             final Builtin impl = Builtins.get(name);
-            final Value[] args = new Value[argv.size() - 1];
-            for (int i = 1; i < argv.size(); i++)
-                args[i - 1] = special ? argv.get(i) : eval(argv.get(i));
+            final Value[] args = new Value[argList.size()];
+            for (int i = 0; i < argList.size(); i++) {
+                final ObjectValue argNode = argList.get(i, ObjectValue.class);
+                final SymbolValue argName =
+                        argNode.get(new SymbolValue("ast/invokeArg/name"), SymbolValue.class);
+                if (argName != null)
+                    throw new UnsupportedOperationException("TODO: support named arguments in built-ins");
+                final Value argNodeValue = argNode.get(new SymbolValue("ast/invokeArg/value"));
+                args[i] = special ? argNodeValue : eval(argNodeValue);
+            }
             return impl.exec(args);
         }
         throw new UnsupportedOperationException("TODO:" + func);
