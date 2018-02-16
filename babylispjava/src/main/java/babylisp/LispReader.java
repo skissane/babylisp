@@ -1,209 +1,120 @@
 package babylisp;
 
+import babylisp.token.BabyLispTokenLanguage;
+import babylisp.token.TokenEvent;
+import babylisp.token.TokenReader;
 import babylisp.values.*;
 
 import javax.annotation.Nonnull;
-import java.util.Collections;
+import java.util.function.Consumer;
+
+import static babylisp.token.TokenType.*;
 
 public class LispReader {
-    private final String text;
-    private int pos = 0;
-    private int line = 1, col = 1;
+    private final TokenReader reader;
 
-    public LispReader(@Nonnull String text) {
-        this.text = text.replace("\r\n", "\n").replace("\r", "\n");
-    }
-
-    public char peek(int off) {
-        final int w = pos + off;
-        return w < 0 || w >= text.length() ? (char) 0xFFFF : text.charAt(w);
-    }
-
-    public boolean match(@Nonnull String str) {
-        for (int i = 0; i < str.length(); i++) {
-            if (peek(i) != str.charAt(i))
-                return false;
-        }
-        return true;
-    }
-
-    public void advance(int off) {
-        if (off <= 0)
-            throw new IllegalArgumentException();
-        final String passed = text.substring(pos, Math.min(pos + off, text.length()));
-        final long lines = passed.chars().filter(c -> c == '\n').count();
-        line += lines;
-        if (lines > 0) {
-            col += passed.length() - passed.lastIndexOf('\n');
-        } else
-            col += passed.length();
-        pos += passed.length();
-    }
-
-    public boolean swallow(@Nonnull String str) {
-        if (!match(str))
-            return false;
-        advance(str.length());
-        return true;
-    }
-
-    public void expect(@Nonnull String str) {
-        if (swallow(str))
-            return;
-        throw syntaxError("expected " + escapeString(str));
+    private LispReader(@Nonnull String text) {
+        this.reader = new TokenReader(BabyLispTokenLanguage.BABYLISP, text);
     }
 
     private String escapeString(@Nonnull String str) {
         return "\"" + str.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
-    public RuntimeException syntaxError(@Nonnull String why) {
-        String lineText = text.split("\n")[line - 1];
-        String msg = "(" + line + "," + col + ") syntax error: + " + why + "\n" +
-                line + ":" + lineText + "\n" +
-                String.join("", Collections.nCopies(Integer.toString(line).length(), "")) +
-                ":" + Collections.nCopies(col - 1, " ") + "^";
-        return new RuntimeException(msg);
-    }
-
-    public boolean matchEOF(int off) {
-        return peek(off) == 0xFFFF;
-    }
-
-    public void skipWSP() {
-        while (Character.isWhitespace(peek(0)))
-            advance(1);
-    }
-
-    public static Value read(@Nonnull String text) {
+    public static void read(@Nonnull String text, @Nonnull Consumer<Value> executor) {
         final LispReader rdr = new LispReader(text);
-        rdr.skipWSP();
-        final Value v = rdr.read();
-        rdr.skipWSP();
-        rdr.expectEOF();
-        return v;
-    }
-
-    private void expectEOF() {
-        if (!matchEOF(0))
-            throw syntaxError("expected EOF");
+        while (!rdr.reader.matchEOF())
+            executor.accept(rdr.read());
+        rdr.reader.expectEOF();
     }
 
     private Value read() {
-        if (match("%{"))
-            return readDict();
-        if (match("("))
-            return readList();
-        if (match("\""))
-            return readString();
-        if (matchSymbolStart())
-            return readSymbol();
-        if (matchDigit() || match("-"))
-            return readInteger();
-        if (match("["))
-            return readObject();
-        throw syntaxError("illegal syntax");
+        final TokenEvent e = reader.peek(0);
+        if (e != null)
+            switch (e.tokenType()) {
+                case TT_dictBegin:
+                    return readDict();
+                case TT_listBegin:
+                    return readList();
+                case TT_dqStrBegin:
+                    return readString();
+                case TT_symbol:
+                    return readSymbol();
+                case TT_integer:
+                    return readInteger();
+                case TT_objectBegin:
+                    return readObject();
+                case TT_pragmaBegin:
+                    return readPragma();
+            }
+        throw reader.syntaxError("illegal syntax, got " + reader.got());
+    }
 
+    private Value readPragma() {
+        reader.expect(TT_pragmaBegin);
+        final TokenEvent eName = reader.expect(TT_symbol);
+        final SymbolValue name = new SymbolValue(eName.tokenValue());
+        final PragmaReader pragmaReader = PragmaReader.readers().get(name);
+        if (pragmaReader == null)
+            throw reader.syntaxError("unrecognised pragma #[" + name + "]");
+        final Value pragma = pragmaReader.readPragma(reader);
+        reader.expect(TT_bracketEnd);
+        return pragma;
     }
 
     private ObjectValue readObject() {
-        expect("[");
+        reader.expect(TT_objectBegin);
         final SymbolValue ofClass = readSymbol();
         final ObjectValue o = new ObjectValue(ofClass);
-        skipWSP();
-        while (!match("]")) {
-            expectNotEOF();
-            expect("=");
-            final SymbolValue attr = readSymbol();
-            skipWSP();
-            final Value value = read();
-            o.set(attr, value);
+        while (reader.swallow(TT_bracketEnd) == null) {
+            reader.expectNotEOF();
+            final TokenEvent plusKeyword = reader.swallow(TT_plusKeyword);
+            if (plusKeyword != null) {
+                o.set(new SymbolValue(plusKeyword.tokenValue()), SymbolValue.TRUE);
+            } else {
+                final TokenEvent keyword = reader.expect(TT_keyword);
+                o.set(new SymbolValue(keyword.tokenValue()), read());
+            }
         }
         return o;
     }
 
     private SymbolValue readSymbol() {
-        if (!matchSymbolStart())
-            throw syntaxError("invalid symbol");
-        final StringBuilder b = new StringBuilder();
-        while (matchSymbolStart() || matchDigit()) {
-            b.append(peek(0));
-            advance(1);
-        }
-        return new SymbolValue(b.toString());
+        return new SymbolValue(reader.expect(TT_symbol).tokenValue());
     }
 
     private Value readInteger() {
-        final boolean negated = swallow("-");
-        final StringBuilder b = new StringBuilder();
-        while (matchDigit()) {
-            b.append(peek(0));
-            advance(1);
-        }
-        if (b.length() == 0)
-            throw syntaxError("invalid integer syntax");
-        final long r = Long.parseLong(b.toString());
-        return new IntegerValue(negated ? -r : r);
+        return new IntegerValue(Long.parseLong(reader.expect(TT_integer).tokenValue()));
     }
 
-    private boolean matchDigit() {
-        final char c = peek(0);
-        return c >= '0' && c <= '9';
-    }
 
     private StringValue readString() {
         final StringBuilder b = new StringBuilder();
-        expect("\"");
-        while (!swallow("\"")) {
-            expectNotEOF();
-            if (swallow("\\")) {
-                expectNotEOF();
-                char ch = peek(0);
-                switch (ch) {
-                    case 'n':
-                        b.append("\n");
-                        break;
-                    case 'r':
-                        b.append("\r");
-                        break;
-                    case 't':
-                        b.append("\t");
-                        break;
-                    case '\\':
-                        b.append("\\");
-                        break;
-                    case '\"':
-                        b.append("\"");
-                        break;
-                    default:
-                        throw syntaxError("unrecognised escape in quoted string");
+        reader.expect(TT_dqStrBegin);
+        while (reader.swallow(TT_dqStrEnd) == null) {
+            final TokenEvent e = reader.read();
+            if (e == null)
+                throw reader.syntaxError("unexpected EOF");
+            switch (e.tokenType()) {
+                case TT_dqStrEscape:
+                case TT_dqStrHexEscape:
+                case TT_dqStrUnescaped: {
+                    b.append(e.tokenValue());
+                    break;
                 }
-            } else {
-                b.append(peek(0));
+                default:
+                    throw reader.syntaxError("unexpected " + e.tokenType());
             }
-            advance(1);
         }
         return new StringValue(b.toString());
     }
 
-    private void expectNotEOF() {
-        if (peek(0) == 0xFFFF)
-            throw syntaxError("unexpected EOF");
-    }
-
-    private boolean matchSymbolStart() {
-        char ch = peek(0);
-        return ch >= 'A' && ch <= 'Z' ||
-                ch >= 'a' && ch <= 'z' ||
-                ch == '_' || ch == '$';
-    }
-
     private ListValue readList() {
         final ListValue r = new ListValue();
-        expect("(");
+        reader.expect(TT_listBegin);
         while (true) {
-            skipWSP();
-            if (swallow(")"))
+            reader.expectNotEOF();
+            if (reader.swallow(TT_braceEnd) != null)
                 return r;
             r.add(read());
         }
@@ -211,13 +122,12 @@ public class LispReader {
 
     private DictValue readDict() {
         final DictValue r = new DictValue();
-        expect("%{");
+        reader.expect(TT_dictBegin);
         while (true) {
-            skipWSP();
-            if (swallow("}"))
+            reader.expectNotEOF();
+            if (reader.swallow(TT_braceEnd) != null)
                 return r;
             final Value key = read();
-            skipWSP();
             final Value value = read();
             r.set((SimpleValue) key, value);
         }

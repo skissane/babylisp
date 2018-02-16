@@ -53,4 +53,10 @@ public class LispEvaluator {
         }
         throw new UnsupportedOperationException("TODO:" + func);
     }
+
+    static Value readThenEvalCode(@Nonnull String text) {
+        final Value[] result = new Value[1];
+        LispReader.read(text, code -> result[0] = eval(code));
+        return result[0];
+    }
 }

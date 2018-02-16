@@ -76,8 +76,7 @@ public class BabyLisp {
     }
 
     private static void evalCode(@Nonnull String text) {
-        final Value code = LispReader.read(text);
-        final Value result = LispEvaluator.eval(code);
+        final Value result = LispEvaluator.readThenEvalCode(text);
         out.println(result);
     }
 

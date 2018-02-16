@@ -13,6 +13,8 @@
 #[attr callable/body =desc "Callable body"]
 #[class arg (top) =desc "Defines an argument of a callable"]
 #[attr arg/name =desc "Name of argument"]
+#[attr arg/opt =desc "Is this argument optional?"]
+#[attr arg/rest =desc "Is this argument the rest argument?"]
 
 #[func putLine (& $v) +builtin]
 #[func set ($var $to) +builtin +special]

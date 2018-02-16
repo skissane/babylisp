@@ -17,8 +17,7 @@ public class Repl {
                     return;
                 if (line.trim().isEmpty())
                     continue;
-                final Value value = LispReader.read(line);
-                final Value result = LispEvaluator.eval(value);
+                final Value result = LispEvaluator.readThenEvalCode(line);
                 System.out.println(result);
             }
         } catch (IOException e) {
