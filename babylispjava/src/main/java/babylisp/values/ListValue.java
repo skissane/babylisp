@@ -17,7 +17,7 @@ public class ListValue extends ComplexValue {
 
     @Override
     protected String doToString() {
-        return "(" + values.stream().map(Object::toString).collect(Collectors.joining(" ")) + ")";
+        return "{" + values.stream().map(Object::toString).collect(Collectors.joining(" ")) + "}";
     }
 
     @Override
