@@ -1,14 +1,15 @@
 #[class top ()]
 #[class dbObject (top)]
+#[class catalog (dbObject)]
 
 #[attr top/ofClass =desc "Class of this object"]
 #[attr top/desc =desc "Description of this object"]
-#[attr dbObject/name =desc "Name of catalogued object"]
+#[attr catalog/name =desc "Name of catalogued object"]
 #[attr class/extends =desc "Superclasses which this class extends"]
 
 #[class callable (top) =desc "Named or anonymous function"]
 #[attr callable/args =desc "Arguments of this callable"]
-#[class func (callable dbObject) =desc "Catalogued function"]
+#[class func (callable catalog) =desc "Catalogued function"]
 #[attr func/builtin =desc "Marks function as builtin"]
 #[attr callable/body =desc "Callable body"]
 #[class arg (top) =desc "Defines an argument of a callable"]
