@@ -11,6 +11,7 @@ import java.io.IOException;
 public class Repl {
     public static void run() {
         try (ConsoleReader r = new ConsoleReader()) {
+            r.setExpandEvents(false);
             while (true) {
                 final String line = r.readLine("BabyLisp> ");
                 if (line == null)
