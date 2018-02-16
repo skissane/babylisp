@@ -21,7 +21,7 @@ public class LispReader {
         return "\"" + str.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
-    public static void read(@Nonnull String text, @Nonnull Consumer<Value> executor) {
+    public static void read(@Nonnull String text, @Nonnull Consumer<ObjectValue> executor) {
         final LispReader rdr = new LispReader(text);
         while (!rdr.reader.matchEOF())
             executor.accept(rdr.read());

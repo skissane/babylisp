@@ -90,6 +90,10 @@ public final class ObjectValue extends ComplexValue {
         return values.get(attr);
     }
 
+    public <T extends Value> T get(@Nonnull SymbolValue attr, @Nonnull Class<T> cls) {
+        return cls.cast(get(attr));
+    }
+
     @Override
     protected ObjectValue doCopy() {
         final ObjectValue copy = new ObjectValue(ofClass());

@@ -1,5 +1,6 @@
 package babylisp;
 
+import babylisp.values.SymbolValue;
 import babylisp.values.Value;
 
 import javax.annotation.Nonnull;
@@ -80,8 +81,13 @@ public class BabyLisp {
         out.println(result);
     }
 
+    private static void loadCode(@Nonnull String text) {
+        LispReader.read(text,
+                node -> Database.getInstance().set(node.get(ASTUtil.CATALOG_NAME, SymbolValue.class), node));
+    }
+
     private static void runFile(@Nonnull String fileName) {
-        evalCode(slurpFile(Paths.get(fileName)));
+        loadCode(slurpFile(Paths.get(fileName)));
     }
 
     private static String slurpFile(@Nonnull Path path) {

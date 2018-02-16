@@ -3,24 +3,23 @@ package babylisp;
 import babylisp.token.TokenEvent;
 import babylisp.token.TokenReader;
 import babylisp.values.ObjectValue;
-import babylisp.values.StringValue;
 import babylisp.values.SymbolValue;
 
 import javax.annotation.Nonnull;
+
+import java.util.Objects;
 
 import static babylisp.token.TokenType.*;
 
 public final class ASTUtil {
 
-    private static final SymbolValue DBOBJECT_NAME = new SymbolValue("dbObject/name");
-    private static final SymbolValue DBOBJECT_PARENT = new SymbolValue("dbObject/parent");
+    public static final SymbolValue CATALOG_NAME = new SymbolValue("catalog/name");
 
     private ASTUtil() {
     }
 
     public static void setName(@Nonnull ObjectValue astNode, @Nonnull SymbolValue name) {
-        astNode.set(DBOBJECT_PARENT, name.parent());
-        astNode.set(DBOBJECT_NAME, new StringValue(name.ownName()));
+        astNode.set(CATALOG_NAME, Objects.requireNonNull(name));
     }
 
     public static void readAttrs(@Nonnull LispReader reader, @Nonnull ObjectValue astNode) {
