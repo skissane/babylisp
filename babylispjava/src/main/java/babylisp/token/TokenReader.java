@@ -139,4 +139,8 @@ public class TokenReader {
         if (matchEOF())
             throw syntaxError("unexpected EOF");
     }
+
+    public TokenText text() {
+        return text;
+    }
 }

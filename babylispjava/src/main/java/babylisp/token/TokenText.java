@@ -1,15 +1,14 @@
 package babylisp.token;
 
 import babylisp.Utils;
+import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 public class TokenText {
     private final String text;
-    private final List<Integer> lines;
+    private final ImmutableList<Integer> lines;
 
     TokenText(@Nonnull String text) {
         this.text = stripLastNewLine(Utils.expandTabs(
@@ -17,13 +16,13 @@ public class TokenText {
                         .replace("\r\n", "\n")
                         .replace("\r", "\n"),
                 8));
-        final List<Integer> lines = new ArrayList<>();
+        final ImmutableList.Builder<Integer> lines = ImmutableList.builder();
         int pos = 0;
         while (pos >= 0) {
-            lines.add(pos > 0 ? pos + 1 : pos);
-            pos = text.indexOf('\n', pos + 1);
+            lines.add(pos > 0  ? pos + 1 : pos);
+            pos = this.text.indexOf('\n', pos + 1);
         }
-        this.lines = Collections.unmodifiableList(lines);
+        this.lines =lines.build();
     }
 
     private static String stripLastNewLine(@Nonnull String text) {
@@ -86,9 +85,13 @@ public class TokenText {
         assert col >= 1 : "col >= 1 : col=" + col + " in " + this;
         String lineText = getTextForLine(line);
         String msg = "(" + line + "," + col + ") syntax error: " + why + "\n" +
-                line + ":" + lineText + "\n" +
+                line + "|" + lineText + "\n" +
                 String.join("", Collections.nCopies(Integer.toString(line).length(), " ")) +
-                ":" + String.join("", Collections.nCopies(col - 1, " ")) + "^";
+                "|" + String.join("", Collections.nCopies(col - 1, " ")) + "^";
         return new RuntimeException(msg);
+    }
+
+    public ImmutableList<Integer> lines() {
+        return lines;
     }
 }

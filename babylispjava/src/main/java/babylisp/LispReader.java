@@ -64,8 +64,11 @@ public class LispReader {
         o.set("ast/invoke/what", read());
         final ListValue args = new ListValue();
         o.set("ast/invoke/args", args);
-        while (reader.swallow(TT_parenEnd) != null) {
-            if (reader.match(TT_plusKeyword) != null) {
+        while (true) {
+            reader.expectNotEOF();
+            if (reader.match(TT_parenEnd) != null)
+                break;
+            else if (reader.match(TT_plusKeyword) != null) {
                 final TokenEvent plusKeyword = reader.swallow(TT_plusKeyword);
                 args.add(invocNamedArg(new SymbolValue("$" + plusKeyword.tokenValue()), constTrue()));
             } else if (reader.match(TT_keyword) != null) {
@@ -74,6 +77,7 @@ public class LispReader {
             } else
                 args.add(invocPosArg(read()));
         }
+        reader.expect(TT_parenEnd);
         return o;
     }
 
