@@ -18,8 +18,12 @@ public class Repl {
                     return;
                 if (line.trim().isEmpty())
                     continue;
-                final Value result = LispEvaluator.readThenEvalCode(line);
-                System.out.println(Value.toString(result));
+                try {
+                    final Value result = LispEvaluator.readThenEvalCode(line);
+                    System.out.println(Value.toString(result));
+                } catch (Throwable th) {
+                    th.printStackTrace(System.out);
+                }
             }
         } catch (IOException e) {
             throw Utils.handle(e);

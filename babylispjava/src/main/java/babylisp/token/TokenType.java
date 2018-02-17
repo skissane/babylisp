@@ -20,6 +20,6 @@ public enum TokenType {
     TT_dqStrEnd,
     TT_dqStrUnescaped,
     TT_dqStrEscape,
-    TT_dqStrHexEscape
-
+    TT_dqStrHexEscape,
+    TT_star
 }

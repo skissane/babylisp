@@ -26,7 +26,8 @@ public class BabyLispTokenLanguage {
                     TokenRule.of("[)]", TT_parenEnd),
                     TokenRule.of("[{]", TT_listBegin),
                     TokenRule.of("\\]", TT_bracketEnd),
-                    TokenRule.of("\"", TT_dqStrBegin, TokenState.TS_dqString)
+                    TokenRule.of("\"", TT_dqStrBegin, TokenState.TS_dqString),
+                    TokenRule.of("[*]", TT_star)
             ),
             TokenStateRules.of(TokenState.TS_dqString,
                     TokenRule.ofPopState("\"", TT_dqStrEnd),

@@ -50,8 +50,15 @@ public class LispReader {
                     return readInvoc();
                 case TT_var:
                     return readVar();
+                case TT_star:
+                    return readNull();
             }
         throw reader.syntaxError("illegal syntax, got " + reader.got());
+    }
+
+    private ObjectValue readNull() {
+        reader.expect(TT_star);
+        return new ObjectValue("ast/null");
     }
 
     private ObjectValue readVar() {

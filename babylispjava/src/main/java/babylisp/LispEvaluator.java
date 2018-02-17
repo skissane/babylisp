@@ -31,6 +31,10 @@ public class LispEvaluator {
                 return node.getSymbol(new SymbolValue("ast/symbolConst/value"));
             case "ast/stringConst":
                 return node.get(new SymbolValue("ast/stringConst/value"), StringValue.class);
+            case "ast/integerConst":
+                return node.get(new SymbolValue("ast/integerConst/value"), IntegerValue.class);
+            case "ast/null":
+                return null;
             default:
                 return node;
         }
